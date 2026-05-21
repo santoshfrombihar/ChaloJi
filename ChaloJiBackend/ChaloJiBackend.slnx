@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="../ChaloJi.Modules.Auth/ChaloJi.Modules.Auth.csproj" Id="45ce6b02-55f6-40e8-b0d3-5f42b95883e3" />
+  <Project Path="../ChaloJi.Modules.Notification/ChaloJi.Modules.Notification.csproj" Id="dc25c4e0-f25b-4e6e-882a-94e341cb0443" />
+  <Project Path="../ChaloJi.Modules.Ride/ChaloJi.Modules.Ride.csproj" Id="7d2e19c7-87dc-4aa4-a9bb-b499e280ef38" />
+  <Project Path="ChaloJiBackend.csproj" />
+</Solution>

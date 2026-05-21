@@ -1,0 +1,18 @@
+## Build results (Kachra folders)
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+
+## Visual Studio & VS Code Tooling
+.vs/
+.vscode/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+## Local Secrets (Taaki password leak na ho)
+usersecrets.json
+[Aa]ppsettings.[Dd]evelopment.json
