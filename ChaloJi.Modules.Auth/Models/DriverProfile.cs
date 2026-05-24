@@ -26,6 +26,7 @@ namespace ChaloJi.Modules.Auth.Models
 
         public bool IsVerified { get; set; }
 
+        public DateTime CreatedDate { get; set; }
         public bool IsOnline { get; set; }
         
     }

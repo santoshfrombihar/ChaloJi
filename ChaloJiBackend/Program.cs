@@ -24,7 +24,17 @@ namespace ChaloJiBackend
                 options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
             });
 
+            builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
             builder.Services.AddScoped<IAuthService, AuthService>();
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("AllowAll", policy =>
+                {
+                    policy.AllowAnyOrigin()
+                          .AllowAnyMethod()
+                          .AllowAnyHeader();
+                });
+            });
 
             var app = builder.Build();
 
@@ -34,6 +44,7 @@ namespace ChaloJiBackend
                 app.MapScalarApiReference();
             }
 
+            app.UseCors("AllowAll");
             app.UseHttpsRedirection();
             app.MapControllers();
 
