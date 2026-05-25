@@ -7,6 +7,7 @@ class CustomTextField extends StatelessWidget {
   final IconData prefixIcon;
   final bool obscureText;
   final TextInputType keyboardType;
+  final String? Function(String?)? validator; // ✅ proper type + optional
 
   const CustomTextField({
     super.key,
@@ -16,14 +17,16 @@ class CustomTextField extends StatelessWidget {
     required this.prefixIcon,
     this.obscureText = false,
     this.keyboardType = TextInputType.text,
+    this.validator, // optional — purane screens break nahi honge
   });
 
   @override
   Widget build(BuildContext context) {
-    return TextField(
+    return TextFormField( // ✅ TextField → TextFormField
       controller: controller,
       obscureText: obscureText,
       keyboardType: keyboardType,
+      validator: validator, // ✅ connected
       style: const TextStyle(color: Color(0xFF0F172A), fontSize: 16),
       decoration: InputDecoration(
         labelText: labelText,

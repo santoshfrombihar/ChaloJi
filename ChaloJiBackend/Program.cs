@@ -26,6 +26,7 @@ namespace ChaloJiBackend
 
             builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
             builder.Services.AddScoped<IAuthService, AuthService>();
+            builder.Services.AddScoped<IUserProfileService, UserProfileService>();
             builder.Services.AddCors(options =>
             {
                 options.AddPolicy("AllowAll", policy =>

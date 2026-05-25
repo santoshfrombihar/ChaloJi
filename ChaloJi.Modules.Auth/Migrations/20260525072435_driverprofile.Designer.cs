@@ -3,6 +3,7 @@ using System;
 using ChaloJi.Modules.Auth.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace ChaloJi.Modules.Auth.Migrations
 {
     [DbContext(typeof(AuthDbContext))]
-    partial class AuthDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260525072435_driverprofile")]
+    partial class driverprofile
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -65,9 +68,6 @@ namespace ChaloJi.Modules.Auth.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("AadhaarNumber")
-                        .IsUnique();
-
                     b.HasIndex("DriverProfileId")
                         .IsUnique();
 
@@ -117,9 +117,6 @@ namespace ChaloJi.Modules.Auth.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("DriverProfileId")
-                        .IsUnique();
-
-                    b.HasIndex("LicenseNumber")
                         .IsUnique();
 
                     b.ToTable("DriverLicenses");
@@ -204,9 +201,6 @@ namespace ChaloJi.Modules.Auth.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("DriverProfileId")
-                        .IsUnique();
-
-                    b.HasIndex("PanNumber")
                         .IsUnique();
 
                     b.ToTable("PanCards");
@@ -332,9 +326,6 @@ namespace ChaloJi.Modules.Auth.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("DriverProfileId")
-                        .IsUnique();
-
-                    b.HasIndex("VehicleNumber")
                         .IsUnique();
 
                     b.ToTable("VehicleDetails");

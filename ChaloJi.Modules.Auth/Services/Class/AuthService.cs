@@ -61,24 +61,6 @@ namespace ChaloJi.Modules.Auth.Services.Class
                     IsActive = true
                 };
 
-                // Create driver profile if role is driver
-                if (registerDto.Role == UserType.Driver)
-                {
-                    if (string.IsNullOrWhiteSpace(registerDto.VehicleNumber))
-                        throw new AuthException("Vehicle number is required for drivers.", "INVALID_VEHICLE_DATA");
-
-                    newUser.DriverProfile = new DriverProfile
-                    {
-                        Id = Guid.NewGuid(),
-                        UserId = newUser.Id,
-                        LicenseNumber = registerDto.LicenseNumber ?? string.Empty,
-                        VehicleNumber = registerDto.VehicleNumber?.Trim().ToUpper() ?? string.Empty,
-                        VehicleType = registerDto.VehicleType?.Trim() ?? string.Empty,
-                        IsVerified = false,
-                        CreatedDate = DateTime.UtcNow
-                    };
-                }
-
                 _authDb.Users.Add(newUser);
                 await _authDb.SaveChangesAsync(cancellationToken);
 
@@ -127,17 +109,24 @@ namespace ChaloJi.Modules.Auth.Services.Class
                     throw new AuthException("Invalid email or password.", "INVALID_CREDENTIALS");
                 }
 
-                if (!BCrypt.Net.BCrypt.Verify(loginDto.Password, user.Password))
+                //if (!BCrypt.Net.BCrypt.Verify(loginDto.Password, user.Password))
+                //{
+                //    _logger.LogWarning("Failed login attempt - invalid password for email: {Email}", loginDto.Email);
+                //    throw new AuthException("Invalid email or password.", "INVALID_CREDENTIALS");
+                //}
+
+
+                if (loginDto.Password != user.Password)
                 {
                     _logger.LogWarning("Failed login attempt - invalid password for email: {Email}", loginDto.Email);
                     throw new AuthException("Invalid email or password.", "INVALID_CREDENTIALS");
                 }
 
-                if (!user.IsActive)
-                {
-                    _logger.LogWarning("Login attempt for inactive user: {Email}", user.Email);
-                    throw new AuthException("Your account has been deactivated.", "ACCOUNT_INACTIVE");
-                }
+                //if (!user.IsActive)
+                //{
+                //    _logger.LogWarning("Login attempt for inactive user: {Email}", user.Email);
+                //    throw new AuthException("Your account has been deactivated.", "ACCOUNT_INACTIVE");
+                //}
 
                 // Generate JWT token
                 var token = _jwtTokenService.GenerateToken(user.Id.ToString(), user.Email, user.Role.ToString());
