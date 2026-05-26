@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:chaloji_driver/core/theme/app_theme.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter_map_cancellable_tile_provider/flutter_map_cancellable_tile_provider.dart';
+import 'package:chaloji_driver/features/auth/presentation/screens/profile/kyc_status_screen.dart';
+import 'dart:js' as js;
+import 'dart:async';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -21,10 +25,12 @@ class _HomeScreenState extends State<HomeScreen>
   LatLng _currentLocation = LatLng(25.5941, 85.1376);
   bool _locationLoaded = false;
   final MapController _mapController = MapController();
+  late ValueNotifier<LatLng> _locationNotifier;
 
   @override
   void initState() {
     super.initState();
+    _locationNotifier = ValueNotifier<LatLng>(_currentLocation);
     _toggleController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 400),
@@ -39,6 +45,7 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   void dispose() {
     _toggleController.dispose();
+    _locationNotifier.dispose();
     super.dispose();
   }
 
@@ -189,128 +196,141 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Widget _buildMapPlaceholder() {
-    return Stack(
-      children: [
-        FlutterMap(
-          mapController: _mapController, // ✅ controller add
-          options: MapOptions(initialCenter: _currentLocation, initialZoom: 15),
+    return ValueListenableBuilder<LatLng>(
+      valueListenable: _locationNotifier,
+      builder: (context, currentLocation, _) {
+        print('Map rebuilding with location: ${currentLocation.latitude}, ${currentLocation.longitude}');
+        return Stack(
           children: [
-            TileLayer(
-              urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-              userAgentPackageName: 'com.chaloji.driver',
-              tileProvider: CancellableNetworkTileProvider(),
-            ),
-            MarkerLayer(
-              markers: [
-                Marker(
-                  point: _currentLocation, // ✅ dynamic location
-                  width: 50,
-                  height: 50,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: AppTheme.accentColor,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppTheme.accentColor.withOpacity(0.4),
-                          blurRadius: 12,
-                          spreadRadius: 3,
+            FlutterMap(
+              mapController: _mapController,
+              options: MapOptions(
+                initialCenter: currentLocation,
+                initialZoom: 15.0,
+                interactionOptions: const InteractionOptions(
+                  flags: InteractiveFlag.all,
+                ),
+              ),
+              children: [
+                TileLayer(
+                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  userAgentPackageName: 'com.chaloji.driver',
+                  tileProvider: CancellableNetworkTileProvider(),
+                ),
+                MarkerLayer(
+                  markers: [
+                    Marker(
+                      point: currentLocation,
+                      width: 50,
+                      height: 50,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: AppTheme.accentColor,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppTheme.accentColor.withOpacity(0.4),
+                              blurRadius: 12,
+                              spreadRadius: 3,
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                    child: const Icon(
-                      Icons.navigation_rounded,
-                      color: Colors.white,
-                      size: 24,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-
-        // ✅ My Location button
-        Positioned(
-          top: 16,
-          right: 16,
-          child: FloatingActionButton.small(
-            heroTag: 'location',
-            onPressed: () {
-              if (_locationLoaded) {
-                _mapController.move(_currentLocation, 15);
-              } else {
-                _getCurrentLocation();
-              }
-            },
-            backgroundColor: Colors.white,
-            elevation: 4,
-            child: const Icon(
-              Icons.my_location_rounded,
-              color: AppTheme.primaryColor,
-            ),
-          ),
-        ),
-
-        // ✅ GO ONLINE / GO OFFLINE toggle button
-        Positioned(
-          bottom: 24,
-          left: 0,
-          right: 0,
-          child: Center(
-            child: GestureDetector(
-              onTap: _toggleOnline,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 400),
-                width: 130,
-                height: 130,
-                decoration: BoxDecoration(
-                  color: _isOnline
-                      ? const Color(0xFF10B981)
-                      : AppTheme.primaryColor,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color:
-                          (_isOnline
-                                  ? const Color(0xFF10B981)
-                                  : AppTheme.primaryColor)
-                              .withOpacity(0.4),
-                      blurRadius: 24,
-                      spreadRadius: 4,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      _isOnline
-                          ? Icons.radio_button_checked_rounded
-                          : Icons.power_settings_new_rounded,
-                      color: Colors.white,
-                      size: 34,
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      _isOnline ? 'GO\nOFFLINE' : 'GO\nONLINE',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 1,
-                        height: 1.2,
+                        child: const Icon(
+                          Icons.navigation_rounded,
+                          color: Colors.white,
+                          size: 24,
+                        ),
                       ),
                     ),
                   ],
                 ),
+              ],
+            ),
+
+            // ✅ My Location button
+            Positioned(
+              top: 16,
+              right: 16,
+              child: FloatingActionButton.small(
+                heroTag: 'location',
+                onPressed: () {
+                  print('My location button tapped. Location loaded: $_locationLoaded');
+                  if (_locationLoaded) {
+                    _mapController.move(currentLocation, 15);
+                  } else {
+                    _getCurrentLocation();
+                  }
+                },
+                backgroundColor: Colors.white,
+                elevation: 4,
+                child: const Icon(
+                  Icons.my_location_rounded,
+                  color: AppTheme.primaryColor,
+                ),
               ),
             ),
-          ),
-        ),
-      ],
+
+            // ✅ GO ONLINE / GO OFFLINE toggle button
+            Positioned(
+              bottom: 24,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: GestureDetector(
+                  onTap: _toggleOnline,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 400),
+                    width: 130,
+                    height: 130,
+                    decoration: BoxDecoration(
+                      color: _isOnline
+                          ? const Color(0xFF10B981)
+                          : AppTheme.primaryColor,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color:
+                              (_isOnline
+                                      ? const Color(0xFF10B981)
+                                      : AppTheme.primaryColor)
+                                  .withOpacity(0.4),
+                          blurRadius: 24,
+                          spreadRadius: 4,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          _isOnline
+                              ? Icons.radio_button_checked_rounded
+                              : Icons.power_settings_new_rounded,
+                          color: Colors.white,
+                          size: 34,
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          _isOnline ? 'GO\nOFFLINE' : 'GO\nONLINE',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1,
+                            height: 1.2,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -572,7 +592,8 @@ class _HomeScreenState extends State<HomeScreen>
             const SizedBox(height: 12),
 
             // Menu items
-            Container(
+            // Menu items
+            Material(
               color: Colors.white,
               child: Column(
                 children: [
@@ -580,30 +601,59 @@ class _HomeScreenState extends State<HomeScreen>
                     Icons.directions_car_outlined,
                     'My Vehicle',
                     'Auto — BR01 AB 1234',
+                    onTap: () {},
                   ),
                   _menuItem(
                     Icons.receipt_long_outlined,
                     'Ride History',
                     'View all past rides',
+                    onTap: () {},
                   ),
                   _menuItem(
                     Icons.account_balance_wallet_outlined,
                     'Earnings & Payouts',
                     'Withdraw your earnings',
+                    onTap: () {},
                   ),
                   _menuItem(
                     Icons.help_outline_rounded,
                     'Help & Support',
                     'Get help anytime',
+                    onTap: () {},
                   ),
-                  _menuItem(Icons.privacy_tip_outlined, 'Privacy Policy', ''),
+                  _menuItem(
+                    Icons.account_box_outlined,
+                    'KYC Verification Documents',
+                    'Status: Pending Uploads',
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const KycStatusScreen(
+                            kycStatus: {
+                              'aadhaarVerified': false,
+                              'panVerified': false,
+                              'vehicleVerified': false,
+                              'licenseVerified': false,
+                            },
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  _menuItem(
+                    Icons.privacy_tip_outlined,
+                    'Privacy Policy',
+                    '',
+                    onTap: () {}, // ✅ Added missing onTap here
+                  ),
                 ],
               ),
             ),
             const SizedBox(height: 12),
 
             // Logout
-            Container(
+            Material(
               color: Colors.white,
               child: ListTile(
                 leading: const Icon(
@@ -626,73 +676,251 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Widget _menuItem(IconData icon, String title, String subtitle) {
-    return Column(
-      children: [
-        ListTile(
-          leading: Icon(icon, color: AppTheme.primaryColor, size: 22),
-          title: Text(
-            title,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              color: AppTheme.primaryColor,
+  Widget _menuItem(
+    IconData icon,
+    String title,
+    String subtitle, {
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.white,
+      child: Column(
+        children: [
+          ListTile(
+            leading: Icon(icon, color: AppTheme.primaryColor, size: 22),
+            title: Text(
+              title,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: AppTheme.primaryColor,
+              ),
             ),
+            subtitle: subtitle.isNotEmpty
+                ? Text(
+                    subtitle,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: AppTheme.textMutedColor,
+                    ),
+                  )
+                : null,
+            trailing: const Icon(
+              Icons.chevron_right_rounded,
+              color: AppTheme.textMutedColor,
+              size: 20,
+            ),
+            onTap: onTap,
           ),
-          subtitle: subtitle.isNotEmpty
-              ? Text(
-                  subtitle,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppTheme.textMutedColor,
-                  ),
-                )
-              : null,
-          trailing: const Icon(
-            Icons.chevron_right_rounded,
-            color: AppTheme.textMutedColor,
-            size: 20,
-          ),
-          onTap: () {},
-        ),
-        const Divider(height: 1, indent: 56, color: Color(0xFFE2E8F0)),
-      ],
+          const Divider(height: 1, indent: 56, color: Color(0xFFE2E8F0)),
+        ],
+      ),
     );
   }
 
   Future<void> _getCurrentLocation() async {
     try {
-      LocationPermission permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) return;
+      // On web, use browser geolocation or mock data
+      if (kIsWeb) {
+        print('Web platform detected - using browser geolocation');
+        await _getWebLocation();
+        return;
       }
 
-      // ✅ Pehle last known location lo — fast
-      Position? lastKnown = await Geolocator.getLastKnownPosition();
-      if (lastKnown != null && mounted) {
-        setState(() {
-          _currentLocation = LatLng(lastKnown.latitude, lastKnown.longitude);
-          _locationLoaded = true;
-        });
-        _mapController.move(_currentLocation, 15);
-      }
-
-      // ✅ Phir accurate location lo
-      Position position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.best, // ✅ locationSettings nahi
-      );
-
-      if (mounted) {
-        setState(() {
-          _currentLocation = LatLng(position.latitude, position.longitude);
-          _locationLoaded = true;
-        });
-        _mapController.move(_currentLocation, 15);
-      }
+      // On mobile, use native geolocation
+      await _getMobileLocation();
     } catch (e) {
       print('Location error: $e');
+      if (mounted) {
+        setState(() {
+          _locationLoaded = true;
+        });
+      }
     }
+  }
+
+  Future<void> _getWebLocation() async {
+    try {
+      print('Edge browser detected - requesting Geolocation API with high accuracy');
+      
+      try {
+        js.context.callMethod('eval', ['''
+          (function() {
+            if (navigator.geolocation) {
+              console.log('Starting geolocation...');
+              navigator.geolocation.getCurrentPosition(
+                function(position) {
+                  var lat = position.coords.latitude;
+                  var lng = position.coords.longitude;
+                  var accuracy = position.coords.accuracy;
+                  var timestamp = position.timestamp;
+                  console.log('Geolocation success!');
+                  console.log('Latitude: ' + lat);
+                  console.log('Longitude: ' + lng);
+                  console.log('Accuracy: ' + accuracy + ' meters');
+                  console.log('Timestamp: ' + new Date(timestamp));
+                  window.flutterLocationCallback = {
+                    lat: lat, 
+                    lng: lng,
+                    accuracy: accuracy,
+                    timestamp: timestamp
+                  };
+                },
+                function(error) {
+                  console.error('Geolocation error: ' + error.code + ' - ' + error.message);
+                  if (error.code === 1) {
+                    console.log('Permission denied - Please allow location access in browser settings');
+                  }
+                  window.flutterLocationCallback = {error: error.message};
+                },
+                {
+                  enableHighAccuracy: true,
+                  timeout: 15000,
+                  maximumAge: 0
+                }
+              );
+            } else {
+              console.error('Geolocation not supported by this browser');
+              window.flutterLocationCallback = {error: 'not_supported'};
+            }
+          })()
+        ''']);
+
+        // Wait for location callback with timeout
+        int attempts = 0;
+        while (attempts < 30) {
+          await Future.delayed(const Duration(milliseconds: 500));
+          
+          try {
+            final locationData = js.context['flutterLocationCallback'];
+            if (locationData != null && locationData.toString() != 'null') {
+              // Check if error
+              if (locationData['error'] != null) {
+                print('Geolocation error from browser: ${locationData['error']}');
+                if (mounted) {
+                  setState(() {
+                    _locationLoaded = true;
+                  });
+                }
+                return;
+              }
+
+              final lat = (locationData['lat'] as num).toDouble();
+              final lng = (locationData['lng'] as num).toDouble();
+              final accuracy = locationData['accuracy'];
+              
+              print('Got browser location: $lat, $lng (Accuracy: ${accuracy}m)');
+              final location = LatLng(lat, lng);
+              _updateLocation(location);
+              return;
+            }
+          } catch (e) {
+            print('Error reading location from JS: $e');
+          }
+          
+          attempts++;
+        }
+
+        print('Browser geolocation timeout after ${attempts * 500}ms');
+        if (mounted) {
+          setState(() {
+            _locationLoaded = true;
+          });
+        }
+      } catch (e) {
+        print('JS eval error: $e');
+        if (mounted) {
+          setState(() {
+            _locationLoaded = true;
+          });
+        }
+      }
+    } catch (e) {
+      print('Web location method error: $e');
+      if (mounted) {
+        setState(() {
+          _locationLoaded = true;
+        });
+      }
+    }
+  }
+
+  Future<void> _getMobileLocation() async {
+    // Request permission
+    LocationPermission permission = await Geolocator.checkPermission();
+    print('Location permission: $permission');
+    
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      print('Permission after request: $permission');
+      if (permission == LocationPermission.denied) {
+        print('Location permission denied');
+        if (mounted) {
+          setState(() {
+            _locationLoaded = true;
+          });
+        }
+        return;
+      }
+    }
+
+    if (permission == LocationPermission.deniedForever) {
+      print('Location permission denied forever');
+      if (mounted) {
+        setState(() {
+          _locationLoaded = true;
+        });
+      }
+      return;
+    }
+
+    // Try to get last known position
+    print('Fetching last known position...');
+    try {
+      Position? lastKnown = await Geolocator.getLastKnownPosition();
+      if (lastKnown != null) {
+        print('Got last known position: ${lastKnown.latitude}, ${lastKnown.longitude}');
+        final location = LatLng(lastKnown.latitude, lastKnown.longitude);
+        _updateLocation(location);
+      }
+    } catch (e) {
+      print('Last known location error: $e');
+    }
+
+    // Wait a bit before getting accurate position
+    await Future.delayed(const Duration(milliseconds: 300));
+
+    // Get current position
+    print('Fetching current position...');
+    Position position = await Geolocator.getCurrentPosition(
+      desiredAccuracy: LocationAccuracy.best,
+      timeLimit: const Duration(seconds: 10),
+    );
+
+    print('Got position: ${position.latitude}, ${position.longitude}');
+    final location = LatLng(position.latitude, position.longitude);
+    _updateLocation(location);
+  }
+
+  void _updateLocation(LatLng location) {
+    if (!mounted) return;
+    
+    _currentLocation = location;
+    _locationNotifier.value = location;
+    
+    setState(() {
+      _locationLoaded = true;
+    });
+
+    // Ensure map controller is ready before moving
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      try {
+        _mapController.move(location, 15);
+        print('Map moved to: ${location.latitude}, ${location.longitude}');
+      } catch (e) {
+        print('Map move error: $e');
+      }
+    });
   }
 
   // ── Bottom Navigation ────────────────────────────────

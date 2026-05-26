@@ -5,8 +5,7 @@ import 'package:chaloji_driver/features/auth/presentation/screens/register_scree
 import 'package:chaloji_driver/features/auth/data/services/auth_service.dart';
 import 'package:chaloji_driver/features/auth/data/models/login_response.dart';
 import 'package:chaloji_driver/features/auth/presentation/screens/home_screen.dart';
-
-
+import 'package:chaloji_driver/core/storage/token_storage.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -41,22 +40,22 @@ class _LoginScreenState extends State<LoginScreen> {
 
     setState(() => _isLoading = true);
 
-    // ✅ Fix 1: bool nahi, LoginResponse? hai return type
     LoginResponse? result = await _authService.loginDriver(
-      _emailController.text
-          .trim(), // ✅ Fix 2: email variable nahi, controller se lo
-      _passwordController
-          .text, // ✅ Fix 2: password variable nahi, controller se lo
+      _emailController.text.trim(),
+      _passwordController.text,
     );
 
     if (!mounted) return;
     setState(() => _isLoading = false);
 
     if (result != null) {
+      await TokenStorage.saveToken(result.token);
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const HomeScreen()),
       );
+    } else {
+      _showSnackBar('Invalid Email or Password.', isError: true);
     }
   }
 

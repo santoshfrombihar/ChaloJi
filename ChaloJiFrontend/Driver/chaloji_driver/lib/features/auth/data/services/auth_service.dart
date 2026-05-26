@@ -19,7 +19,6 @@ class AuthService {
         headers: _headers,
         body: jsonEncode({'email': email, 'password': password}),
       );
-
       if (response.statusCode == 200) {
         final json = jsonDecode(response.body);
         return LoginResponse.fromJson(json['data']); // .NET ApiResponse wrapper
